@@ -1,0 +1,184 @@
+package com.project.fipe.controle;
+
+import com.project.fipe.Model.Dados;
+import com.project.fipe.Model.Modelos;
+import com.project.fipe.Model.Veiculos;
+import com.project.fipe.service.ConsumoApi;
+import com.project.fipe.service.ConverteDados;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Component
+public class TelaPrincipalController {
+
+    @FXML
+    private ChoiceBox tipoVeiculo;
+
+    @FXML
+    private ComboBox marcaVeiculo;
+
+    @FXML
+    private ComboBox modeloVeiculo;
+
+    @FXML
+    private ComboBox anoVeiculo;
+
+    @FXML
+    private Button buttonPesquisar;
+
+    @FXML private VBox boxResultado;
+
+    @FXML
+    private GridPane gridResultado;
+
+    @FXML
+    private Label labelMarca;
+
+    @FXML
+    private Label labelModelo;
+
+    @FXML
+    private Label labelAno;
+
+    @FXML
+    private Label labelCombustivel;
+
+    @FXML
+    private Label labelValor;
+
+    @FXML
+    private Label labelCodigoFipe;
+
+    @FXML
+    private Label labelMesRef;
+
+    @FXML
+    private Button btnVerGrafico;
+
+    @FXML
+    private Button btnIA;
+
+    private final String linkApi = "https://parallelum.com.br/fipe/api/v1/";
+    private ConsumoApi consumo = new ConsumoApi();
+    private ConverteDados conversor = new ConverteDados();
+    String endereco = null;
+
+    @FXML
+    public void initialize() {
+        // Listener para mudanças
+        tipoVeiculo.getSelectionModel().selectedItemProperty().addListener(
+                (obs, oldVal, newVal) -> {
+                    System.out.println("Nova seleção (FXML - Tipo Veiculo): " + newVal);
+                    selecionaTipoVeiculo();
+                }
+        );
+
+        marcaVeiculo.getSelectionModel().selectedItemProperty().addListener(
+                (obs, oldVal, newVal) -> {
+                    System.out.println("Nova seleção (FXML - Marca): " + newVal);
+                    selecionaMarcaVeiculo();
+                }
+        );
+
+        modeloVeiculo.getSelectionModel().selectedItemProperty().addListener(
+                (obs, oldVal, newVal) -> {
+                    System.out.println("Nova seleção (FXML - Marca): " + newVal);
+                    selecionaSubTipoVeiculo();
+                }
+        );
+
+
+    }
+
+    public void selecionaTipoVeiculo(){
+        if (tipoVeiculo.getSelectionModel().getSelectedItem() != null) {
+            if ("Carro".equals(tipoVeiculo.getValue())){ // Verifica se o valor selecionado. Compara o conteúdo
+                endereco = linkApi + "carros/marcas/";
+            } else if ("Moto".equals(tipoVeiculo.getValue())) {
+                endereco = linkApi + "motos/marcas/";
+            } else if ("Caminhão".equals(tipoVeiculo.getValue())) {
+                endereco = linkApi + "caminhoes/marcas/";
+            }
+            System.out.println(tipoVeiculo.getValue());
+            var json = consumo.obterDados(endereco);
+            System.out.println(endereco);
+            var marcas = conversor.obterLista(json, Dados.class);
+            marcas.stream().sorted(Comparator.comparing(Dados::codigo)).forEach(Dados::codigo);
+            marcaVeiculo.getItems().addAll(marcas);
+        }
+    }
+
+    public void selecionaMarcaVeiculo(){
+        if(marcaVeiculo.getSelectionModel().getSelectedItem() != null){
+            endereco = linkApi + "motos" + "/marcas/" + marcaVeiculo.getValue() + "/modelos" ;
+            System.out.println(endereco);
+        }
+        var json = consumo.obterDados(endereco);
+        var modeloLista = conversor.obterDados(json, Modelos.class);
+        System.out.println("\nModelos dessa Marca: ");
+        modeloLista.modelos().stream().sorted(Comparator.comparing(Dados::codigo)).forEach(System.out::println);
+        modeloVeiculo.getItems().addAll(modeloLista.modelos());
+//        List<Dados> subTipoModelos = modeloLista.modelos().stream().toList();
+//        subVeiculo.getItems().addAll(subTipoModelos);
+//        System.out.println("\nSUB Modelos dessa Marca: ");
+//        System.out.println(subTipoModelos);
+    }
+
+    public void selecionaSubTipoVeiculo(){
+        if(modeloVeiculo.getSelectionModel().getSelectedItem() != null){
+            endereco = linkApi + "motos" + "/marcas/" + marcaVeiculo.getValue() + "/modelos/" + modeloVeiculo.getValue() + "/anos";
+            System.out.println(endereco);
+        }
+         var json = consumo.obterDados(endereco);
+          List<Dados> anos = conversor.obterLista(json, Dados.class);
+          List<Veiculos> veiculos = new ArrayList<>();
+          for (int i = 0; i < anos.size(); i++) {
+           var enderecoAnos = endereco + "/" + anos.get(i).codigo();
+           json = consumo.obterDados(enderecoAnos);
+           Veiculos veiculo = conversor.obterDados(json, Veiculos.class);
+           veiculos.add(veiculo);
+         }
+        System.out.println("\nTodos os veiculos filtrados com avaliações por ano: ");
+          veiculos.forEach(v -> System.out.println(v.marca() + " " + v.modelo() + " " + v.ano()));
+          anoVeiculo.getItems().clear();
+          List<Integer> todosAnos = veiculos.stream().map(Veiculos::ano).distinct().collect(Collectors.toList());
+         anoVeiculo.getItems().addAll(todosAnos);
+        if (!todosAnos.isEmpty()) {
+            anoVeiculo.getSelectionModel().selectFirst();
+        }
+        anoVeiculo.getSelectionModel().getSelectedItem();
+        endereco = linkApi + "motos" + "/marcas/" + marcaVeiculo.getValue() + "/modelos/" + modeloVeiculo.getValue() + "/anos/" + anoVeiculo.getValue() + "-1";
+        System.out.println(endereco);
+    }
+
+    public void pesquisar(ActionEvent event) {
+        anoVeiculo.getSelectionModel().getSelectedItem();
+        endereco = linkApi + "motos" + "/marcas/" + marcaVeiculo.getValue() + "/modelos/" + modeloVeiculo.getValue() + "/anos/" + anoVeiculo.getValue() + "-1";
+        var json = consumo.obterDados(endereco);
+        var veiculos = conversor.obterDados(json, Veiculos.class);
+        System.out.println("\nInformações após precionar o botão. "+ veiculos);
+        labelMarca.setText(veiculos.marca());
+        labelModelo.setText(veiculos.modelo());
+        labelAno.setText(String.valueOf(veiculos.ano()));
+        labelCombustivel.setText(veiculos.tipoCombustivel());
+        labelValor.setText(veiculos.valor());
+        labelCodigoFipe.setText(veiculos.codigoFipe());
+        labelMesRef.setText(veiculos.mesRef());
+        boxResultado.setVisible(true);
+
+    }
+
+
+
+}
