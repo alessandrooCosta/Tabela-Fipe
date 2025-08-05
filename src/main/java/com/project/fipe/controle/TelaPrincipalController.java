@@ -175,8 +175,9 @@ public class TelaPrincipalController {
         labelValor.setText(veiculos.valor());
         labelCodigoFipe.setText(veiculos.codigoFipe());
         labelMesRef.setText(veiculos.mesRef());
-        boxResultado.setVisible(true);
-
+        gridResultado.setVisible(true);
+        btnVerGrafico.setVisible(true);
+        btnIA.setVisible(true);
     }
 
 
