@@ -1,11 +1,10 @@
-package com.project.fipe.controle;
+package com.project.fipe.Controle;
 
 import com.project.fipe.Model.Dados;
 import com.project.fipe.Model.Modelos;
 import com.project.fipe.Model.Veiculos;
-import com.project.fipe.service.ConsumoApi;
-import com.project.fipe.service.ConverteDados;
-import javafx.collections.ObservableList;
+import com.project.fipe.Service.ConsumoApi;
+import com.project.fipe.Service.ConverteDados;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -14,7 +13,6 @@ import javafx.scene.layout.VBox;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -101,27 +99,32 @@ public class TelaPrincipalController {
 
     }
 
+    final String CARRO = "carros";
+    final String MOTO = "motos";
+    final String CAMINHAO = "caminhoes";
+
     public void selecionaTipoVeiculo(){
         if (tipoVeiculo.getSelectionModel().getSelectedItem() != null) {
-            if ("Carro".equals(tipoVeiculo.getValue())){ // Verifica se o valor selecionado. Compara o conteúdo
-                endereco = linkApi + "carros/marcas/";
-            } else if ("Moto".equals(tipoVeiculo.getValue())) {
-                endereco = linkApi + "motos/marcas/";
-            } else if ("Caminhão".equals(tipoVeiculo.getValue())) {
-                endereco = linkApi + "caminhoes/marcas/";
+            if (CARRO.equals(tipoVeiculo.getValue())){ // Verifica se o valor selecionado. Compara o conteúdo
+                endereco = linkApi + CARRO + "/marcas/";
+            } else if (MOTO.equals(tipoVeiculo.getValue())) {
+                endereco = linkApi + MOTO + "/marcas/";
+            } else if (CAMINHAO.equals(tipoVeiculo.getValue())) {
+                endereco = linkApi + CAMINHAO + "/marcas/";
             }
             System.out.println(tipoVeiculo.getValue());
             var json = consumo.obterDados(endereco);
             System.out.println(endereco);
             var marcas = conversor.obterLista(json, Dados.class);
             marcas.stream().sorted(Comparator.comparing(Dados::codigo)).forEach(Dados::codigo);
+            marcas.stream().sorted(Comparator.comparing(Dados::nome)).forEach(Dados::nome);
             marcaVeiculo.getItems().addAll(marcas);
         }
     }
 
     public void selecionaMarcaVeiculo(){
         if(marcaVeiculo.getSelectionModel().getSelectedItem() != null){
-            endereco = linkApi + "motos" + "/marcas/" + marcaVeiculo.getValue() + "/modelos" ;
+            endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaVeiculo.getValue() + "/modelos" ;
             System.out.println(endereco);
         }
         var json = consumo.obterDados(endereco);
@@ -129,15 +132,11 @@ public class TelaPrincipalController {
         System.out.println("\nModelos dessa Marca: ");
         modeloLista.modelos().stream().sorted(Comparator.comparing(Dados::codigo)).forEach(System.out::println);
         modeloVeiculo.getItems().addAll(modeloLista.modelos());
-//        List<Dados> subTipoModelos = modeloLista.modelos().stream().toList();
-//        subVeiculo.getItems().addAll(subTipoModelos);
-//        System.out.println("\nSUB Modelos dessa Marca: ");
-//        System.out.println(subTipoModelos);
     }
 
     public void selecionaSubTipoVeiculo(){
         if(modeloVeiculo.getSelectionModel().getSelectedItem() != null){
-            endereco = linkApi + "motos" + "/marcas/" + marcaVeiculo.getValue() + "/modelos/" + modeloVeiculo.getValue() + "/anos";
+            endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaVeiculo.getValue() + "/modelos/" + modeloVeiculo.getValue() + "/anos";
             System.out.println(endereco);
         }
          var json = consumo.obterDados(endereco);
@@ -158,13 +157,13 @@ public class TelaPrincipalController {
             anoVeiculo.getSelectionModel().selectFirst();
         }
         anoVeiculo.getSelectionModel().getSelectedItem();
-        endereco = linkApi + "motos" + "/marcas/" + marcaVeiculo.getValue() + "/modelos/" + modeloVeiculo.getValue() + "/anos/" + anoVeiculo.getValue() + "-1";
+        endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaVeiculo.getValue() + "/modelos/" + modeloVeiculo.getValue() + "/anos/" + anoVeiculo.getValue() + "-1";
         System.out.println(endereco);
     }
 
     public void pesquisar(ActionEvent event) {
         anoVeiculo.getSelectionModel().getSelectedItem();
-        endereco = linkApi + "motos" + "/marcas/" + marcaVeiculo.getValue() + "/modelos/" + modeloVeiculo.getValue() + "/anos/" + anoVeiculo.getValue() + "-1";
+        endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaVeiculo.getValue() + "/modelos/" + modeloVeiculo.getValue() + "/anos/" + anoVeiculo.getValue() + "-1";
         var json = consumo.obterDados(endereco);
         var veiculos = conversor.obterDados(json, Veiculos.class);
         System.out.println("\nInformações após precionar o botão. "+ veiculos);

@@ -1,4 +1,4 @@
-package com.project.fipe.service;
+package com.project.fipe.Service;
 
 import java.io.IOException;
 import java.net.URI;

@@ -1,4 +1,4 @@
-package com.project.fipe.service;
+package com.project.fipe.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 

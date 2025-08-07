@@ -6,7 +6,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="648.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.project.fipe.controle.TelaPrincipalController">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="648.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.project.fipe.Controle.TelaPrincipalController">
    <children>
       <Pane layoutX="11.0" layoutY="52.0" prefHeight="291.0" prefWidth="678.0">
          <children>
@@ -39,9 +39,9 @@
             <ChoiceBox fx:id="tipoVeiculo" layoutX="206.0" layoutY="64.0" prefHeight="25.0" prefWidth="281.0">
             <items>
                <FXCollections fx:factory="observableArrayList">
-                  <String fx:value="Carro" />
-                  <String fx:value="Moto" />
-                  <String fx:value="Caminhão" />
+                  <String fx:value="carros" />
+                  <String fx:value="motos" />
+                  <String fx:value="caminhoes" />
                </FXCollections>
             </items>
             </ChoiceBox>
