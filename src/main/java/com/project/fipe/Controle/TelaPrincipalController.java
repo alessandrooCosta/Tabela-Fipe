@@ -9,11 +9,9 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,21 +19,19 @@ import java.util.stream.Collectors;
 public class TelaPrincipalController {
 
     @FXML
-    private ChoiceBox tipoVeiculo;
+    private ChoiceBox<String> tipoVeiculo;
 
     @FXML
-    private ComboBox marcaVeiculo;
+    private ComboBox<Dados> marcaVeiculo;
 
     @FXML
-    private ComboBox modeloVeiculo;
+    private ComboBox<Dados> modeloVeiculo;
 
     @FXML
     private ComboBox anoVeiculo;
 
     @FXML
     private Button buttonPesquisar;
-
-    @FXML private VBox boxResultado;
 
     @FXML
     private GridPane gridResultado;
@@ -74,64 +70,63 @@ public class TelaPrincipalController {
 
     @FXML
     public void initialize() {
+       tipoVeiculo.getItems().addAll("carros", "motos", "caminhoes");
+
         // Listener para mudanças
         tipoVeiculo.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> {
-                    System.out.println("Nova seleção (FXML - Tipo Veiculo): " + newVal);
+                    System.out.println("Tipo Veiculo: " + newVal);
                     selecionaTipoVeiculo();
                 }
         );
 
         marcaVeiculo.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> {
-                    System.out.println("Nova seleção (FXML - Marca): " + newVal);
+                    System.out.println("Marca: " + newVal);
                     selecionaMarcaVeiculo();
                 }
         );
-
         modeloVeiculo.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> {
-                    System.out.println("Nova seleção (FXML - Marca): " + newVal);
+                    System.out.println("Modelo: " + newVal);
                     selecionaSubTipoVeiculo();
                 }
         );
-
-
     }
 
-    final String CARRO = "carros";
-    final String MOTO = "motos";
-    final String CAMINHAO = "caminhoes";
-
     public void selecionaTipoVeiculo(){
-        if (tipoVeiculo.getSelectionModel().getSelectedItem() != null) {
-            if (CARRO.equals(tipoVeiculo.getValue())){ // Verifica se o valor selecionado. Compara o conteúdo
-                endereco = linkApi + CARRO + "/marcas/";
-            } else if (MOTO.equals(tipoVeiculo.getValue())) {
-                endereco = linkApi + MOTO + "/marcas/";
-            } else if (CAMINHAO.equals(tipoVeiculo.getValue())) {
-                endereco = linkApi + CAMINHAO + "/marcas/";
+      try {
+            if (tipoVeiculo.getSelectionModel().getSelectedItem() == null) {
+                return;
             }
-            System.out.println(tipoVeiculo.getValue());
-            var json = consumo.obterDados(endereco);
-            System.out.println(endereco);
-            var marcas = conversor.obterLista(json, Dados.class);
-            marcas.stream().sorted(Comparator.comparing(Dados::codigo)).forEach(Dados::codigo);
-            marcas.stream().sorted(Comparator.comparing(Dados::nome)).forEach(Dados::nome);
-            marcaVeiculo.getItems().addAll(marcas);
-        }
+                String tipoVeiculoSelecionado = tipoVeiculo.getValue();
+                endereco = linkApi + tipoVeiculoSelecionado + "/marcas/";
+                var json = consumo.obterDados(endereco);
+                List<Dados> marcas = conversor.obterLista(json, Dados.class);
+                marcaVeiculo.getItems().clear();
+                marcaVeiculo.getItems().addAll(marcas);
+       }catch (Exception e){
+           System.err.println("Erro ao carregar marcas!");
+           e.printStackTrace();
+       }
+
     }
 
     public void selecionaMarcaVeiculo(){
-        if(marcaVeiculo.getSelectionModel().getSelectedItem() != null){
-            endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaVeiculo.getValue() + "/modelos" ;
-            System.out.println(endereco);
+        try {
+            Dados marcaSelecionada = marcaVeiculo.getValue();
+            if (marcaSelecionada == null) {
+                return;
+            }
+            endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaSelecionada.codigo() + "/modelos";
+            var json = consumo.obterDados(endereco);
+            Modelos modelos = conversor.obterDados(json, Modelos.class);
+            modeloVeiculo.getItems().clear();
+            modeloVeiculo.getItems().addAll(modelos.modelos());
+        }catch (Exception e){
+            System.err.println("Erro em selecionaMarcaVeiculo:");
+            e.printStackTrace();
         }
-        var json = consumo.obterDados(endereco);
-        var modeloLista = conversor.obterDados(json, Modelos.class);
-        System.out.println("\nModelos dessa Marca: ");
-        modeloLista.modelos().stream().sorted(Comparator.comparing(Dados::codigo)).forEach(System.out::println);
-        modeloVeiculo.getItems().addAll(modeloLista.modelos());
     }
 
     public void selecionaSubTipoVeiculo(){
