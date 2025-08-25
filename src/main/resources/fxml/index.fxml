@@ -40,24 +40,24 @@
             <ChoiceBox fx:id="tipoVeiculo" layoutX="206.0" layoutY="64.0" prefHeight="25.0" prefWidth="281.0">
             <items>
                <FXCollections fx:factory="observableArrayList">
-                  <String fx:value="carros" />
-                  <String fx:value="motos" />
-                  <String fx:value="caminhoes" />
-               </FXCollections>
-            </items>
-            </ChoiceBox>
-            <ComboBox fx:id="marcaVeiculo" editable="true" layoutX="206.0" layoutY="110.0" prefHeight="25.0" prefWidth="281.0">
-               <items>
-                  <FXCollections fx:factory="observableArrayList">
-                  </FXCollections>
-               </items>
-            </ComboBox>
-            <ComboBox fx:id="modeloVeiculo" editable="true" layoutX="206.0" layoutY="156.0" prefHeight="25.0" prefWidth="281.0">
-               <items>
-                  <FXCollections fx:factory="observableArrayList">
-                  </FXCollections>
-               </items>
-            </ComboBox>
+              <!--    <String fx:value="carros" /> -->
+             <!--    <String fx:value="motos" />   -->
+             <!--     <String fx:value="caminhoes" />  -->
+              </FXCollections>
+           </items>
+           </ChoiceBox>
+           <ComboBox fx:id="marcaVeiculo" editable="true" layoutX="206.0" layoutY="110.0" prefHeight="25.0" prefWidth="281.0">
+              <items>
+                 <FXCollections fx:factory="observableArrayList">
+                 </FXCollections>
+              </items>
+           </ComboBox>
+           <ComboBox fx:id="modeloVeiculo" editable="true" layoutX="206.0" layoutY="156.0" prefHeight="25.0" prefWidth="281.0">
+              <items>
+                 <FXCollections fx:factory="observableArrayList">
+                 </FXCollections>
+              </items>
+           </ComboBox>
 <!--           <ComboBox fx:id="subVeiculo" editable="true" layoutX="206.0" layoutY="163.0" prefHeight="25.0" prefWidth="281.0" >-->
 <!--               <items>-->
 <!--                  <FXCollections fx:factory="observableArrayList">-->
