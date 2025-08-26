@@ -11,9 +11,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class TelaPrincipalController {
@@ -28,7 +27,7 @@ public class TelaPrincipalController {
     private ComboBox<Dados> modeloVeiculo;
 
     @FXML
-    private ComboBox anoVeiculo;
+    private ComboBox<Dados> anoVeiculo;
 
     @FXML
     private Button buttonPesquisar;
@@ -64,34 +63,38 @@ public class TelaPrincipalController {
     private Button btnIA;
 
     private final String linkApi = "https://parallelum.com.br/fipe/api/v1/";
-    private ConsumoApi consumo = new ConsumoApi();
-    private ConverteDados conversor = new ConverteDados();
+    private final ConsumoApi consumo = new ConsumoApi();
+    private final ConverteDados conversor = new ConverteDados();
     String endereco = null;
+
 
     @FXML
     public void initialize() {
+
        tipoVeiculo.getItems().addAll("carros", "motos", "caminhoes");
 
         // Listener para mudanças
         tipoVeiculo.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> {
-                   // System.out.println("Tipo Veiculo: " + newVal);
                     selecionaTipoVeiculo();
+                    System.out.println("Tipo Veiculo: " + newVal);
                 }
         );
 
         marcaVeiculo.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> {
-                    System.out.println("Marca: " + newVal);
                     selecionaMarcaVeiculo();
+                    System.out.println("Marca: " + newVal);
                 }
         );
         modeloVeiculo.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> {
-                    System.out.println("Modelo: " + newVal);
                     selecionaSubTipoVeiculo();
+                    System.out.println("Modelo: " + newVal);
                 }
         );
+        anoVeiculo.getSelectionModel();
+
     }
 
     public void selecionaTipoVeiculo(){
@@ -119,43 +122,44 @@ public class TelaPrincipalController {
                 return;
             }
             endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaSelecionada.codigo() + "/modelos";
+            System.out.println("endereço após selecionar a marca: " + endereco);
             var json = consumo.obterDados(endereco);
-            Modelos modelos = conversor.obterDados(json, Modelos.class);
-            modeloVeiculo.getItems().clear();
-            modeloVeiculo.getItems().addAll(modelos.modelos());
+            var modeloLista = conversor.obterDados(json, Modelos.class);
+            System.out.println("\nModelos dessa Marca: ");
+            modeloLista.modelos().stream().sorted(Comparator.comparing(Dados::codigo)).forEach(System.out::println);
+            modeloVeiculo.getItems().addAll(modeloLista.modelos());
+            System.out.println("Tipo de marcaVeiculo: " + marcaVeiculo.getClass());
+            System.out.println("Tipo genérico: " + marcaVeiculo.getItems().getClass());
+        //    Modelos modelos = conversor.obterDados(json, Modelos.class);
+       //     modeloVeiculo.getItems().clear();
+       //     modeloVeiculo.getItems().addAll(modelos.modelos());
         }catch (Exception e){
             System.err.println("Erro em selecionaMarcaVeiculo:");
             e.printStackTrace();
         }
     }
 
-    public void selecionaSubTipoVeiculo(){
-        Dados modeSelecionado = modeloVeiculo.getValue();
-        if(modeSelecionado == null){
-           return;
+    public void selecionaSubTipoVeiculo() {
+        try {
+            Dados modeloSelecionado = modeloVeiculo.getValue();
+            if (modeloSelecionado == null) {
+                return;
+            }
+            Dados marcaSelecionada = marcaVeiculo.getValue();
+            if (marcaSelecionada == null){
+                return;
+            }
+            endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaSelecionada.codigo() + "/modelos/" + modeloSelecionado.codigo() + "/anos";
+            System.out.println("Endereço que deu certo após selecionar o modelo: " + endereco);
+            var json = consumo.obterDados(endereco);
+            List<Dados> anos = conversor.obterLista(json, Dados.class);
+            anoVeiculo.getItems().clear();
+            anoVeiculo.getItems().addAll(anos);
+        } catch (Exception e) {
+            System.out.println("Endereço que deu errado, está dentro do catch: " + endereco);
+            System.err.println("Erro em selecionaSubTipoVeiculo:");
+            e.printStackTrace();
         }
-        endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaVeiculo.getValue().codigo() + "/modelos/" + modeSelecionado.codigo() + "/anos";
-        System.out.println(endereco);
-         var json = consumo.obterDados(endereco);
-          List<Dados> anos = conversor.obterLista(json, Dados.class);
-          List<Veiculos> veiculos = new ArrayList<>();
-          for (int i = 0; i < anos.size(); i++) {
-           var enderecoAnos = endereco + "/" + anos.get(i).codigo();
-           json = consumo.obterDados(enderecoAnos);
-           Veiculos veiculo = conversor.obterDados(json, Veiculos.class);
-           veiculos.add(veiculo);
-         }
-        System.out.println("\nTodos os veiculos filtrados com avaliações por ano: ");
-          veiculos.forEach(v -> System.out.println(v.marca() + " " + v.modelo() + " " + v.ano()));
-          anoVeiculo.getItems().clear();
-          List<Integer> todosAnos = veiculos.stream().map(Veiculos::ano).distinct().collect(Collectors.toList());
-         anoVeiculo.getItems().addAll(todosAnos);
-        if (!todosAnos.isEmpty()) {
-            anoVeiculo.getSelectionModel().selectFirst();
-        }
-        anoVeiculo.getSelectionModel().getSelectedItem();
-        endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaVeiculo.getValue().codigo() + "/modelos/" + modeSelecionado.codigo() + "/anos/" + anoVeiculo.getValue() + "-1";
-        System.out.println("Marca: " + endereco);
     }
 
     public void pesquisar(ActionEvent event) {
@@ -163,7 +167,7 @@ public class TelaPrincipalController {
         endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaVeiculo.getValue() + "/modelos/" + modeloVeiculo.getValue() + "/anos/" + anoVeiculo.getValue() + "-1";
         var json = consumo.obterDados(endereco);
         var veiculos = conversor.obterDados(json, Veiculos.class);
-        System.out.println("\nInformações após precionar o botão. "+ veiculos);
+        System.out.println("\nInformações após pressionar o botão. "+ veiculos);
         labelMarca.setText(veiculos.marca());
         labelModelo.setText(veiculos.modelo());
         labelAno.setText(String.valueOf(veiculos.ano()));
