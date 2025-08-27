@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class TelaPrincipalController {
@@ -21,13 +22,13 @@ public class TelaPrincipalController {
     private ChoiceBox<String> tipoVeiculo;
 
     @FXML
-    private ComboBox<Dados> marcaVeiculo;
+    private ComboBox<String> marcaVeiculo;
 
     @FXML
-    private ComboBox<Dados> modeloVeiculo;
+    private ComboBox<String> modeloVeiculo;
 
     @FXML
-    private ComboBox<Dados> anoVeiculo;
+    private ComboBox<String> anoVeiculo;
 
     @FXML
     private Button buttonPesquisar;
@@ -66,48 +67,53 @@ public class TelaPrincipalController {
     private final ConsumoApi consumo = new ConsumoApi();
     private final ConverteDados conversor = new ConverteDados();
     String endereco = null;
-
+    private List<Dados> marcasList;
+    private List<Dados> modelosList;
+    private List<Dados> anoList;
 
     @FXML
     public void initialize() {
 
-       tipoVeiculo.getItems().addAll("carros", "motos", "caminhoes");
+        tipoVeiculo.getItems().addAll("carros", "motos", "caminhoes");
 
-        // Listener para mudanças
         tipoVeiculo.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> {
                     selecionaTipoVeiculo();
-                    System.out.println("Tipo Veiculo: " + newVal);
                 }
         );
 
         marcaVeiculo.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> {
-                    selecionaMarcaVeiculo();
-                    System.out.println("Marca: " + newVal);
+                    if(newVal != null){
+                        selecionaMarcaVeiculo();
+                    }
                 }
         );
+
         modeloVeiculo.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldVal, newVal) -> {
-                    selecionaSubTipoVeiculo();
-                    System.out.println("Modelo: " + newVal);
+                    if(newVal != null){
+                        selecionaSubTipoVeiculo();
+                    }
                 }
         );
-        anoVeiculo.getSelectionModel();
-
     }
 
     public void selecionaTipoVeiculo(){
       try {
-            if (tipoVeiculo.getSelectionModel().getSelectedItem() == null) {
+            String tipoVeiculoSelecionado = tipoVeiculo.getValue();
+            if (tipoVeiculoSelecionado == null) {
                 return;
             }
-                String tipoVeiculoSelecionado = tipoVeiculo.getValue();
-                endereco = linkApi + tipoVeiculoSelecionado + "/marcas/";
+                endereco = linkApi + tipoVeiculoSelecionado + "/marcas";
                 var json = consumo.obterDados(endereco);
-                List<Dados> marcas = conversor.obterLista(json, Dados.class);
+                marcasList = conversor.obterLista(json, Dados.class);
+                /* Usando Streams para extrair apenas os nomes
+                 Foi criado uma lista de Strings. Essa lista pega os valores que no momento não objetos e transformar
+                 em Strings. */
+                List<String> nomesMarcas = marcasList.stream().map(Dados::nome).collect(Collectors.toList());
                 marcaVeiculo.getItems().clear();
-                marcaVeiculo.getItems().addAll(marcas);
+                marcaVeiculo.getItems().addAll(nomesMarcas);
        }catch (Exception e){
            System.err.println("Erro ao carregar marcas!");
            e.printStackTrace();
@@ -117,22 +123,21 @@ public class TelaPrincipalController {
 
     public void selecionaMarcaVeiculo(){
         try {
-            Dados marcaSelecionada = marcaVeiculo.getValue();
-            if (marcaSelecionada == null) {
+            String marcaSelecionadaNome = marcaVeiculo.getValue();
+            String tipoVeiculoSelecionado = tipoVeiculo.getValue();
+            if (marcaSelecionadaNome  == null || tipoVeiculoSelecionado == null) {
                 return;
             }
-            endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaSelecionada.codigo() + "/modelos";
-            System.out.println("endereço após selecionar a marca: " + endereco);
+            // Stream para buscar na lista a partir do nome da marca selecionada;
+            Dados marcaSelecionado = marcasList.stream().filter(marca -> marca.nome().equals(marcaSelecionadaNome)).findFirst().orElse(null);
+            endereco = linkApi + tipoVeiculoSelecionado + "/marcas/" + marcaSelecionado.codigo() + "/modelos";
+            if (marcaSelecionado == null) return;
             var json = consumo.obterDados(endereco);
-            var modeloLista = conversor.obterDados(json, Modelos.class);
-            System.out.println("\nModelos dessa Marca: ");
-            modeloLista.modelos().stream().sorted(Comparator.comparing(Dados::codigo)).forEach(System.out::println);
-            modeloVeiculo.getItems().addAll(modeloLista.modelos());
-            System.out.println("Tipo de marcaVeiculo: " + marcaVeiculo.getClass());
-            System.out.println("Tipo genérico: " + marcaVeiculo.getItems().getClass());
-        //    Modelos modelos = conversor.obterDados(json, Modelos.class);
-       //     modeloVeiculo.getItems().clear();
-       //     modeloVeiculo.getItems().addAll(modelos.modelos());
+            Modelos modelos = conversor.obterDados(json, Modelos.class);
+            modelosList = modelos.modelos();
+            List<String> nomeModelos = modelosList.stream().map(Dados::nome).collect(Collectors.toList());
+            modeloVeiculo.getItems().clear();
+            modeloVeiculo.getItems().addAll(nomeModelos);
         }catch (Exception e){
             System.err.println("Erro em selecionaMarcaVeiculo:");
             e.printStackTrace();
@@ -141,43 +146,93 @@ public class TelaPrincipalController {
 
     public void selecionaSubTipoVeiculo() {
         try {
-            Dados modeloSelecionado = modeloVeiculo.getValue();
-            if (modeloSelecionado == null) {
+            String modeloSelecionadoNome = modeloVeiculo.getValue();
+            String marcaSelecionadaNome = marcaVeiculo.getValue();
+            String tipoVeiculoSelecionadoNome = tipoVeiculo.getValue();
+            if (modeloSelecionadoNome == null || marcaSelecionadaNome == null || tipoVeiculoSelecionadoNome == null) {
                 return;
             }
-            Dados marcaSelecionada = marcaVeiculo.getValue();
-            if (marcaSelecionada == null){
-                return;
-            }
+            Dados marcaSelecionada = marcasList.stream().filter(marca -> marca.nome().equals(marcaSelecionadaNome)).findFirst().orElse(null);
+            Dados modeloSelecionado = modelosList.stream().filter(modelo -> modelo.nome().equals(modeloSelecionadoNome)).findFirst().orElse(null);
             endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaSelecionada.codigo() + "/modelos/" + modeloSelecionado.codigo() + "/anos";
-            System.out.println("Endereço que deu certo após selecionar o modelo: " + endereco);
             var json = consumo.obterDados(endereco);
-            List<Dados> anos = conversor.obterLista(json, Dados.class);
+            anoList = conversor.obterLista(json, Dados.class);
+            List<String> nomesAnos = anoList.stream().map(Dados::nome).collect(Collectors.toList());
             anoVeiculo.getItems().clear();
-            anoVeiculo.getItems().addAll(anos);
+            anoVeiculo.getItems().addAll(nomesAnos);
         } catch (Exception e) {
-            System.out.println("Endereço que deu errado, está dentro do catch: " + endereco);
             System.err.println("Erro em selecionaSubTipoVeiculo:");
             e.printStackTrace();
         }
     }
 
     public void pesquisar(ActionEvent event) {
-        anoVeiculo.getSelectionModel().getSelectedItem();
-        endereco = linkApi + tipoVeiculo.getValue() + "/marcas/" + marcaVeiculo.getValue() + "/modelos/" + modeloVeiculo.getValue() + "/anos/" + anoVeiculo.getValue() + "-1";
-        var json = consumo.obterDados(endereco);
-        var veiculos = conversor.obterDados(json, Veiculos.class);
-        System.out.println("\nInformações após pressionar o botão. "+ veiculos);
-        labelMarca.setText(veiculos.marca());
-        labelModelo.setText(veiculos.modelo());
-        labelAno.setText(String.valueOf(veiculos.ano()));
-        labelCombustivel.setText(veiculos.tipoCombustivel());
-        labelValor.setText(veiculos.valor());
-        labelCodigoFipe.setText(veiculos.codigoFipe());
-        labelMesRef.setText(veiculos.mesRef());
+        try {
+            String marcaNome = marcaVeiculo.getValue();
+            String modeloNome = modeloVeiculo.getValue();
+            String anoNome = anoVeiculo.getValue();
+            String tipo = tipoVeiculo.getValue();
+
+            if (marcaNome == null || modeloNome == null || anoNome == null || tipo == null) {
+                mostrarAlerta("Selecione todos os campos!");
+                return;
+            }
+
+            Dados marca = marcasList.stream()
+                    .filter(m -> m.nome().equals(marcaNome))
+                    .findFirst()
+                    .orElse(null);
+
+            Dados modelo = modelosList.stream()
+                    .filter(m -> m.nome().equals(modeloNome))
+                    .findFirst()
+                    .orElse(null);
+
+            Dados ano = anoList.stream()
+                    .filter(a -> a.nome().equals(anoNome))
+                    .findFirst()
+                    .orElse(null);
+
+            if (marca == null || modelo == null || ano == null) {
+                mostrarAlerta("Dados não encontrados!");
+                return;
+            }
+
+            endereco = linkApi + tipo + "/marcas/" + marca.codigo() +
+                    "/modelos/" + modelo.codigo() + "/anos/" + ano.codigo();
+
+            var json = consumo.obterDados(endereco);
+            Veiculos veiculo = conversor.obterDados(json, Veiculos.class);
+
+            preencherResultados(veiculo);
+
+        } catch (Exception e) {
+            System.err.println("Erro ao pesquisar:");
+            e.printStackTrace();
+            mostrarAlerta("Erro ao buscar dados: " + e.getMessage());
+        }
+    }
+
+    private void preencherResultados(Veiculos veiculo) {
+        labelMarca.setText(veiculo.marca());
+        labelModelo.setText(veiculo.modelo());
+        labelAno.setText(String.valueOf(veiculo.ano()));
+        labelCombustivel.setText(veiculo.tipoCombustivel());
+        labelValor.setText(veiculo.valor());
+        labelCodigoFipe.setText(veiculo.codigoFipe());
+        labelMesRef.setText(veiculo.mesRef());
+
         gridResultado.setVisible(true);
         btnVerGrafico.setVisible(true);
         btnIA.setVisible(true);
+    }
+
+    private void mostrarAlerta(String mensagem) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Atenção");
+        alert.setHeaderText(null);
+        alert.setContentText(mensagem);
+        alert.showAndWait();
     }
 
 
